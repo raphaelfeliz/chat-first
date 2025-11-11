@@ -1,0 +1,35 @@
+# Firebase
+.firebase/
+*.log
+
+# Dependencies
+/node_modules
+
+# IDE & Editor Files
+.idx/
+.vscode/
+.idea/
+
+# Build Output & Artifacts
+/dist
+/build
+*.wasm
+
+# Static Assets (as requested)
+# Ignoring images as they can be large and managed separately.
+/assets/images/
+
+# Environment Variables
+# Never commit secret keys or environment-specific settings.
+.env
+.env.*
+!.env.example
+
+# OS-generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
