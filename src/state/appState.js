@@ -1,23 +1,7 @@
 /*
 path: src/state/appState.js
 purpose: Global state management for the application. It serves as the single source of truth for user data and product choices, handling data persistence and change notification.
-summary: This module uses a private object (`_state`) to hold the current application state (chat ID, user contact info, and product configuration). It implements a simple Publish/Subscribe (`_subscribers`) pattern to notify other modules (like the Configurator Engine) whenever the state changes. All state changes trigger an asynchronous update to a Firestore document via `_persistState()`, ensuring session data is saved in real-time. It provides exported functions for read-only access (`getState`), subscription (`subscribe`), and controlled updates (`updateProductChoice`, `updateUserData`).
-imports:
-(import) getDb: summary: Retrieves the initialized Firestore database instance for persistence operations. (from ../config/firebase.js)
-functions:
-(private) _persistState: summary: Asynchronously updates the user's chat document in Firebase Firestore with the current `userData` and `productChoice` fields.
-(private) _notifySubscribers: summary: Iterates over all registered callbacks in `_subscribers` and executes them, passing a deep clone of the current state.
-(export) getState: summary: Returns a deep clone (snapshot) of the entire application state object.
-(export) subscribe: summary: Adds a new function to the list of listeners that are executed upon a state change.
-(export) updateProductChoice: summary: Merges new product attributes into the current product choice state, then notifies subscribers and persists the state, but only if an actual change occurred.
-(export) updateUserData: summary: Merges new user data into the current user data state, then notifies subscribers and persists the state, but only if an actual change occurred.
-(export) initializeAppState: summary: The entry point for restoring an existing session. It hydrates the private state object with data loaded from Firestore and immediately notifies all subscribers to render the UI.
 */
-/**
- * @fileoverview Global state management for the application.
- * Manages both user data and product choices, providing a single source of truth.
- * Implements a publish/subscribe pattern to notify other modules of state changes.
- */
 import { getDb } from '../config/firebase.js';
 
 // 1. Private state object
@@ -224,12 +208,27 @@ export async function updateUserData(newUserData) {
     }
 }
 
+export async function resetProductChoice() {
+    console.log(JSON.stringify({
+        level: 'INFO',
+        source: 'appState.js',
+        step: 'resetProductChoice-start',
+        message: 'Resetting product choice to initial state.'
+    }));
+    _state.productChoice = {
+        categoria: null,
+        sistema: null,
+        persiana: null,
+        motorizada: null,
+        material: null,
+        folhas: null,
+    };
+    _notifySubscribers();
+    await _persistState();
+}
+
 /**
  * Initializes the entire app state from a Firestore document.
- * This is the primary entry point for hydrating the state on page load.
- * Crucially, it notifies all subscribers after the state is set,
- * allowing the UI to render with the loaded data.
- * @param {object} initialData - The complete data object from Firestore, including its ID.
  */
 export function initializeAppState(initialData) {
     if (!initialData || !initialData.id) {
@@ -262,7 +261,6 @@ export function initializeAppState(initialData) {
         }));
     }
     
-    // Handle the kebab-case from firestore
     if (initialData['product-choice']) {
         _state.productChoice = { ..._state.productChoice, ...initialData['product-choice'] };
         console.log(JSON.stringify({
@@ -273,7 +271,6 @@ export function initializeAppState(initialData) {
         }));
     }
 
-    // Notify subscribers to update the UI with the loaded state.
     console.log(JSON.stringify({
         level: 'INFO',
         source: 'appState.js',

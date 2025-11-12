@@ -1,24 +1,6 @@
 /*
 path: src/configurator/configuratorEngine.js
 purpose: Core logic for the product configurator. It translates the application state (product choices) into the next logical question or final product display, and manages the associated UI rendering.
-summary: This module is the 'brain' of the configuration process. It subscribes to global state changes via `appState.subscribe`. When a change occurs, it runs the `runFacetLoop` to determine the next step: either filtering the `PRODUCT_CATALOG` to find the next *facet* (question) with multiple options or determining the final product(s). It manages DOM manipulation to render the question/options/products. It also uses the injected `eventEmitter` to communicate new questions back to the `chatUi.js` so they can be displayed as AI messages.
-imports:
-(import) appState: summary: Provides access to read the current state and dispatch state updates (`updateProductChoice`). (from ../state/appState.js)
-(import) PRODUCT_CATALOG: summary: The array of all available products and their attributes. (from ./productCatalog.js)
-(import) BASE_PRODUCT_URL: summary: The base URL used to construct links to final product pages. (from ./productCatalog.js)
-functions:
-(private) getProductField: summary: Helper function to safely retrieve a product attribute based on a UI facet name using `FIELD_MAP`.
-(private) calculateNextSelections: summary: Clears subsequent facets after a new selection is made, ensuring a logical flow (e.g., if a user changes 'categoria', 'sistema' is reset).
-(private) applyFilters: summary: Filters the `PRODUCT_CATALOG` based on the user's current selections, removing products that do not match the criteria.
-(private) getUniqueOptions: summary: Analyzes the filtered product list and extracts all unique, available values for a given facet, used to present choices to the user.
-(private) runFacetLoop: summary: The core engine logic. Iterates through `FACET_ORDER`, filters the catalog, automatically selects single-option facets, and returns the next question or the final product list.
-(private) createOptionCard: summary: Creates the HTML DOM element for an interactive selection option, binding the click event to `applySelection`.
-(private) createProductCard: summary: Creates the HTML DOM element for a final product result, including a link and image.
-(private) renderEngineState: summary: Manages the main UI display, updating the question and grid based on the results from `runFacetLoop`. **Emits 'facetQuestionUpdated' event to the chat UI.**
-(private) renderLatestState: summary: The subscriber callback. Reads the state, runs `runFacetLoop`, and calls `renderEngineState`.
-(export) ConfigEngine.init: summary: Sets the internal `eventEmitter` to allow communication back to the main app/chat.
-(export) ConfigEngine.applySelection: summary: Handles user clicks on option cards. Calculates the new state and dispatches the update to `appState.js`.
-(export) ConfigEngine.recompute: summary: Forces a re-render of the configurator UI.
 */
 console.log(JSON.stringify({
     level: 'INFO',
@@ -550,6 +532,20 @@ window.ConfigEngine = {
             step: 'end',
             message: 'Event emitter set successfully.',
         }));
+
+        const restartButton = document.getElementById('restart-button');
+        if (restartButton) {
+            restartButton.addEventListener('click', () => {
+                console.log(JSON.stringify({
+                    level: 'INFO',
+                    source: 'configuratorEngine.js',
+                    context: { function: 'restartButton.onClick', process: 'STATE_UPDATE' },
+                    step: 'start',
+                    message: 'User clicked the restart button.'
+                }));
+                appState.resetProductChoice();
+            });
+        }
     },
 
     applySelection: (facet, value) => {

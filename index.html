@@ -57,6 +57,22 @@
     button:hover {
       background-color: #2b6cb0; /* Darker blue on hover */
     }
+    
+    #restart-button {
+        background-color: var(--secondary-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-color);
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+
+    #restart-button:hover {
+        background-color: var(--primary-bg);
+        border-color: var(--accent-color);
+    }
 
     .facet-question {
         color: var(--text-color);
@@ -149,9 +165,10 @@
   <div class="flex flex-1 overflow-hidden">
     <!-- Left: Product Selection / Options -->
     <section id="configurator-section" class="flex-1 p-4 border-r border-gray-700 overflow-y-auto">
-      <div class="mb-4">
+      <div class="flex justify-between items-center mb-4">
         <!-- Current facet question will render here -->
         <p id="facet-question" class="text-lg mt-1 facet-question"></p>
+        <button id="restart-button">Recomeçar</button>
       </div>
 
       <div id="option-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-2 gap-y-4">

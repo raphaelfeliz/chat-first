@@ -326,24 +326,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }));
     });
 
-    // --- Event Listeners Setup ---
-    events.on('facetQuestionUpdated', (question) => {
-        // Suppress configurator questions during handoff
-        if (getState().userData.talkToHuman === true) {
-            console.warn("🤫 Suppressing 'facetQuestionUpdated' event: Handoff is active.");
-            return;
-        }
-        console.log(JSON.stringify({
-            level: 'DEBUG',
-            source: 'main.js',
-            module: 'chatUi',
-            step: 'event.facetQuestionUpdated',
-            message: 'Received new facet question from ConfiguratorEngine. Injecting as AI message into chat UI.',
-            payload: { question }
-        }));
-        addAiMessageFromFacet(question);
-    });
-
     // --- SUBSCRIBE HANDOFF MANAGER ---
     subscribeToState(handleHandoffLogic);
     console.log("✅ Handoff Manager has been subscribed to state changes.");
