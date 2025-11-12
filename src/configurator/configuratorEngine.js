@@ -85,6 +85,19 @@ function runFacetLoop(selections) {
   let workingSelections = { ...selections };
   let filtered = applyFilters(workingSelections, PRODUCT_CATALOG);
 
+  const productSlugs = filtered.map(p => p.slug);
+  console.log(JSON.stringify({
+    source: 'configuratorEngine.js',
+    step: 'runFacetLoop',
+    payload: {
+      'filtered-products': {
+        count: filtered.length,
+        slugs: productSlugs,
+        selections: workingSelections
+      }
+    }
+  }));
+
   for (const facet of FACET_ORDER) {
     if (facet === 'motorizada' && workingSelections.persiana !== 'sim') continue;
     if (workingSelections[facet] !== null) continue;
@@ -178,16 +191,25 @@ function renderEngineState(state) {
 // ===============================================
 
 function renderLatestState() {
-  console.log("[configuratorEngine.js:renderLatestState] SUBSCRIBER TRIGGERED: State has changed. Re-rendering UI.");
-  console.log("[configuratorEngine.js:renderLatestState] Fetching latest state from appState...");
-  const currentSelections = appState.getState().productChoice;
-  console.log("[configuratorEngine.js:renderLatestState] Fetched state:", currentSelections);
-
-  const engineState = runFacetLoop(currentSelections);
-  console.log("[configuratorEngine.js:renderLatestState] Computed new engine state. The next question is for facet:", engineState.currentQuestion?.attribute);
-
-  renderEngineState(engineState);
-  console.log("[configuratorEngine.js:renderLatestState] UI rendering complete.");
+    console.log("[configuratorEngine.js:renderLatestState] SUBSCRIBER TRIGGERED: State has changed. Re-rendering UI.");
+    const currentSelections = appState.getState().productChoice;
+    
+    console.log(JSON.stringify({
+      source: 'configuratorEngine.js',
+      step: 'renderLatestState',
+      payload: { 'product-choice': currentSelections }
+    }));
+  
+    const engineState = runFacetLoop(currentSelections);
+  
+    console.log(JSON.stringify({
+      source: 'configuratorEngine.js',
+      step: 'renderLatestState',
+      payload: { 'current-facet-question': engineState.currentQuestion?.title || 'N/A' }
+    }));
+  
+    renderEngineState(engineState);
+    console.log("[configuratorEngine.js:renderLatestState] UI rendering complete.");
 }
 
 window.ConfigEngine = {

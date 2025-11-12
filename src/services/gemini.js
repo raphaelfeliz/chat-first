@@ -1,16 +1,30 @@
 /**
  * Gets an AI response from the Gemini Cloud Function.
  * @param {string} userInput The text from the user.
+ * @param {object} productChoice The user's current product selections.
  * @returns {Promise<object>} A promise that resolves to the AI's full JSON response.
  */
-export async function getAiResponse(userInput) {
+export async function getAiResponse(userInput, productChoice) {
+  // New log to inspect the raw arguments passed to this function
+  console.log(JSON.stringify({
+    source: 'gemini.js',
+    step: 'getAiResponse-arguments',
+    payload: arguments
+  }));
+
   const GEMINI_ENDPOINT = 'https://gemini-endpoint-yf2trly67a-uc.a.run.app/';
+  
+  const requestBody = { prompt: userInput, productChoice };
+  const curlEquivalent = `curl -X POST -H "Content-Type: application/json" -d '${JSON.stringify(requestBody)}' ${GEMINI_ENDPOINT}`;
+
   console.log(JSON.stringify({
     source: 'gemini.js',
     step: 'request',
     payload: {
       endpoint: GEMINI_ENDPOINT,
-      prompt: userInput
+      prompt: userInput,
+      productChoice,
+      curlEquivalent
     }
   }));
 
@@ -20,7 +34,7 @@ export async function getAiResponse(userInput) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ prompt: userInput }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

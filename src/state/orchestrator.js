@@ -1,33 +1,8 @@
-import { updateProductChoice, updateUserData } from './appState.js';
+import { updateProductChoice, updateUserData, getState } from './appState.js';
 
 /**
- * @fileoverview Central orchestrator to process AI responses, translate schemas, and trigger state updates.
+ * @fileoverview Central orchestrator to process AI responses and trigger state updates.
  */
-
-/**
- * Translates the AI's product-choice payload to the frontend's state schema.
- * @param {object} aiPayload The payload from the AI's response.
- * @returns {object} The payload translated for the frontend state.
- */
-function _translateProductChoice(aiPayload) {
-    const frontendPayload = {};
-
-    // Map fields from AI schema to frontend schema
-    if (aiPayload.type)      frontendPayload.categoria = aiPayload.type;
-    if (aiPayload.mechanism) frontendPayload.sistema = aiPayload.mechanism;
-    if (aiPayload.shutter)   frontendPayload.persiana = aiPayload.shutter;
-    if (aiPayload.motorized) frontendPayload.motorizada = aiPayload.motorized;
-    if (aiPayload.material)  frontendPayload.material = aiPayload.material;
-    if (aiPayload.leaves)    frontendPayload.folhas = String(aiPayload.leaves); // Convert number to string for state
-
-    console.log(JSON.stringify({
-        source: 'orchestrator.js',
-        step: '_translateProductChoice',
-        payload: { from: aiPayload, to: frontendPayload }
-    }));
-
-    return frontendPayload;
-}
 
 /**
  * Processes the AI's structured response, orchestrates translation, and triggers the appropriate state update.
@@ -44,6 +19,16 @@ export function handleAiResponse(aiResponse) {
     }
 
     const { target, payload } = aiResponse.data;
+
+    if (aiResponse.data.talkToHuman) {
+        console.log(JSON.stringify({
+            source: 'orchestrator.js',
+            step: 'handleAiResponse-process',
+            payload: { talkToHuman: true }
+        }));
+        // Here you would add logic to escalate to a human agent
+        return;
+    }
 
     if (!target || !payload) {
         console.log(JSON.stringify({
@@ -62,8 +47,11 @@ export function handleAiResponse(aiResponse) {
 
     switch (target) {
         case 'product-choice':
-            const translatedPayload = _translateProductChoice(payload);
-            updateProductChoice(translatedPayload);
+            // The AI now returns the correct schema, so no translation is needed.
+            // We merge the new payload with the existing state.
+            const currentState = getState();
+            const mergedState = { ...currentState, ...payload };
+            updateProductChoice(mergedState);
             break;
         case 'user':
             // No translation needed for user data as schemas match

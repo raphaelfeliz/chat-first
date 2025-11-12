@@ -1,37 +1,36 @@
-#
 # PATH: main.py
 # ENDPOINT: https://gemini-endpoint-yf2trly67a-uc.a.run.app/
 # PURPOSE: Provides an HTTP endpoint to query the Google Gemini API.
-# HOW: Receives a POST request with a user prompt. It then instructs the
-#      Gemini model to return a structured JSON response, which is forwarded
-#      to the original caller. Handles CORS preflight requests.
-# CONTRACT:
-#   Request (POST):  { "prompt": "<string>", "model": "<string, optional>" }
-#   Response (200):  { "status": "success", "message": "<string>", "data": {} }
-#   Response (Error):{ "status": "error", "message": "<string>" }
-# IMPORTS: functions_framework, json, os, google.generativeai
-# EXPORTS: gemini_endpoint (HTTP Cloud Function)
+# HOW: Receives a POST request with a user prompt and the current application state.
+#       It then instructs the Gemini model to return a strict, structured JSON
+#      response which is forwarded to the original caller. Handles CORS.
 #
 import functions_framework
 import json
 import os
 import google.generativeai as genai
 import sys
+import yaml
 
-# IMPORTANT: Set your API key as an environment variable or replace the placeholder below.
-# It is recommended to use an environment variable for security.
 try:
     API_KEY = os.environ["GEMINI_API_KEY"]
 except KeyError:
     raise RuntimeError("GEMINI_API_KEY environment variable not set.") from None
 
+try:
+    with open('kb.yaml', 'r', encoding='utf-8') as f:
+        knowledge_base = yaml.safe_load(f)
+    KB_CONTENT = json.dumps(knowledge_base, indent=2, ensure_ascii=False)
+except Exception as e:
+    print(json.dumps({"severity": "ERROR", "message": f"Could not load knowledge base: {e}"}), file=sys.stderr)
+    KB_CONTENT = "{}"
+
 @functions_framework.http
 def gemini_endpoint(request):
     """
-    HTTP Cloud Function to send prompts to Gemini and return a structured JSON reply
-    tailored for the window and door configurator application.
+    HTTP Cloud Function to send prompts and current state to Gemini and return a
+    structured, non-destructive JSON reply for the configurator application.
     """
-    # --- CORS Preflight Handling ---
     if request.method == "OPTIONS":
         headers = {
             "Access-Control-Allow-Origin": "*",
@@ -42,108 +41,101 @@ def gemini_endpoint(request):
         return ("", 204, headers)
 
     headers = {"Access-Control-Allow-Origin": "*"}
-    
+
     try:
         request_json = request.get_json(silent=True)
-        print(json.dumps({"severity": "INFO", "message": "Received request", "payload": request_json}))
+        if not request_json:
+            raise ValueError("Invalid JSON")
     except Exception as e:
-        print(json.dumps({"severity": "WARNING", "message": f"Could not parse request JSON: {e}"}), file=sys.stderr)
-        request_json = None
+        return (json.dumps({"status": "error", "message": "Malformed JSON in request."}), 400, headers)
 
     if not (request_json and "prompt" in request_json and request_json["prompt"]):
-        return (json.dumps({"status": "error", "message": "Um 'prompt' não vazio deve ser fornecido."}), 400, headers)
-    
+        return (json.dumps({"status": "error", "message": "A non-empty 'prompt' must be provided."}), 400, headers)
+
     user_prompt = request_json["prompt"]
-    # Set default model and allow override from request
-    model_name = request_json.get("model", "gemini-pro")
+    product_choice = request_json.get("productChoice", {})
+    model_name = request_json.get("model", "gemini-2.5-flash")
 
-    structured_prompt = f'''
-    Você é um assistente de IA especialista em um sistema de configuração de janelas e portas.
-    Seu objetivo principal é entender a solicitação de um usuário e traduzi-la em um objeto JSON estruturado.
-    Você deve responder *sempre* e *somente* em português do Brasil.
+    current_selection_json = json.dumps(product_choice, ensure_ascii=False) if product_choice else "Nenhuma seleção foi feita."
 
-    Analise o prompt do usuário para determinar se ele corresponde a uma de duas intenções possíveis:
-    1.  **Configurar um produto:** O usuário está descrevendo uma janela ou porta.
-    2.  **Fornecer informações do usuário:** O usuário está fornecendo seu nome, e-mail ou número de telefone.
+    # <-- MUDANÇA AQUI: O prompt foi atualizado com as novas regras -->
+    structured_prompt = f"""
+    Você é um assistente de IA especialista em um sistema de configurador de produtos.
 
-    Com base no prompt do usuário, você DEVE gerar uma resposta em um formato JSON válido. O objeto JSON raiz deve seguir esta estrutura:
-    {{
-        "status": "success",
-        "message": "<Uma resposta amigável e conversacional para o prompt do usuário, em português do Brasil>",
-        "data": {{}}
-    }}
+    **Regra Absoluta:** Sua resposta DEVE ser um único e válido objeto JSON.
 
-    Se você identificar uma das intenções, o objeto "data" DEVE ser estruturado da seguinte forma:
-    {{
-        "target": "<O nome do schema de dados que está sendo atualizado>",
-        "payload": {{ ... }}
-    }}
+    **Missão:**
+    1.  Analise o "PROMPT DO USUÁRIO" e a "SELEÇÃO ATUAL".
+    2.  Use a "BASE DE CONHECIMENTO" para responder perguntas. Se a resposta não estiver lá, diga que não sabe.
+    3.  Determine se o usuário quer comprar ou falar com um humano (gatilhos: preço, comprar, atendente, etc.).
+    4.  Extraia novas características do produto que o usuário mencionou no prompt, **respeitando estritamente os "Valores Válidos" abaixo**.
+    5.  Gere uma mensagem amigável em português.
+    6.  Construa o objeto JSON de resposta final seguindo o schema obrigatório.
 
-    Aqui estão os schemas possíveis para o 'payload':
+    **Contexto:**
+    - **PROMPT DO USUÁRIO:** "{user_prompt}"
+    - **SELEÇÃO ATUAL:** {current_selection_json}
 
+    **BASE DE CONHECIMENTO:**
+    ```json
+    {KB_CONTENT}
+    ```
+
+    **Valores Válidos para o Payload (data.payload):**
+    Ao extrair características, use APENAS os seguintes valores. Se um valor não corresponder, não o inclua.
+    Se o usuário disser "com motor", use "motorizada". Se disser "sem motor", use "manual".
+    ```
+    categoria: "janela" | "porta";
+    sistema: "janela-correr" | "porta-correr" | "maxim-ar" | "giro";
+    persiana: "sim" | "nao";
+    persianaMotorizada: "motorizada" | "manual" | null; (só preencha se persiana for "sim")
+    material: "vidro" | "vidro + veneziana" | "lambri" | "veneziana" | "vidro + lambri";
+    folhas: 1 | 2 | 3 | 4 | 6;
+    ```
     ---
-    **Schema 1: "product-choice"**
-    Use este schema quando o usuário estiver descrevendo um produto. O payload deve ter a seguinte estrutura rígida:
+    **SCHEMA OBRIGATÓRIO PARA A RESPOSTA JSON:**
+
+    ```json
     {{
-        "type": "(string)",
-        "mechanism": "(string)",
-        "shutter": "(string)",
-        "motorized": "(string)",
-        "material": "(string)",
-        "leaves": "(number)"
+      "status": "success",
+      "message": "(string, sua mensagem para o usuário)",
+      "data": {{
+        "target": "(string, 'product-choice' ou 'user')",
+        "payload": {{
+          // Se target for 'product-choice', preencha com os campos extraídos.
+          // Ex: "categoria": "janela", "sistema": "correr"
+          // Respeite ESTRITAMENTE os "Valores Válidos".
+        }},
+        // OU, se o usuário quer falar com um humano:
+        "talkToHuman": true
+      }}
     }}
+    ```
 
-    Campos e valores válidos (use exatamente estes valores):
-    - "type": (string) Escolha entre: "janela", "porta"
-    - "mechanism": (string) Escolha entre: "janela-correr", "porta-correr", "maxim-ar", "giro"
-    - "shutter": (string) Escolha entre: "sim", "nao"
-    - "motorized": "motorizada", "manual" (somente se shutter for "sim")
-    - "material": (string) Escolha entre: "vidro", "vidro + veneziana", "lambri", "veneziana", "vidro + lambri"
-    - "leaves": (number) Escolha entre: 1, 2, 3, 4, 6
+    **Instruções para o Schema:**
+    1.  **`message`**: Crie uma mensagem amigável. Se o usuário já escolheu "janela", não pergunte se é janela ou porta. Use o contexto!
+    2.  **`data.target`**: Use "product-choice" se o usuário descreveu uma característica do produto. Use "user" se ele informou dados pessoais.
+    3.  **`data.payload`**: Contenha APENAS as novas características do produto mencionadas no *prompt atual* e que sigam os "Valores Válidos". Não repita o que já está na "SELEÇÃO ATUAL".
+    4.  **`data.talkToHuman`**: Use `true` se a intenção de falar com um humano for detectada. Se `talkToHuman` for `true`, o `target` e `payload` podem ser omitidos.
 
-    Regras para "product-choice":
-    - Inclua no payload apenas os campos que o usuário mencionou explicitamente.
-    - Não invente ou presuma valores para campos que o usuário não especificou.
-    - O valor de "leaves" deve ser um NÚMERO, não uma string.
-
-    ---
-    **Schema 2: "user"**
-    Use este schema quando o usuário fornecer seus detalhes de contato.
-
-    Campos:
-    - "userName": (string)
-    - "userPhone": (string)
-    - "userEmail": (string)
-
-    ---
-
-    **Fluxo de Execução:**
-    1.  Sempre forneça uma "message" amigável e útil em português do Brasil.
-    2.  Analise o prompt do usuário: `"{user_prompt}"`
-    3.  Se o prompt contiver detalhes de um produto, preencha o objeto "data" com `target: "product-choice"` e o payload correspondente usando a estrutura rígida definida.
-    4.  Se o prompt contiver detalhes de contato do usuário, preencha o objeto "data" com `target: "user"` e o payload correspondente.
-    5.  Se o prompt for uma pergunta geral, uma saudação ou se a intenção não for clara, o objeto "data" DEVE estar vazio (`{{}}`).
-
-    **Exemplo de Execução:**
-
-    Prompt do usuário: "Eu quero uma janela de correr com 2 folhas de vidro"
-    Sua resposta JSON:
+    **Exemplo:**
+    - PROMPT DO USUÁRIO: "correr"
+    - SELEÇÃO ATUAL: {{"productChoice": {{"categoria": "janela"}}}}
+    - SUA RESPOSTA JSON:
+    ```json
     {{
-        "status": "success",
-        "message": "Ok, selecionei para você uma janela de correr com 2 folhas de vidro. Deseja algo mais?",
-        "data": {{
-            "target": "product-choice",
-            "payload": {{
-                "type": "janela",
-                "mechanism": "janela-correr",
-                "leaves": 2,
-                "material": "vidro"
-            }}
+      "status": "success",
+      "message": "Entendi, uma janela de correr. Qual será o material?",
+      "data": {{
+        "target": "product-choice",
+        "payload": {{
+          "sistema": "janela-correr" 
         }}
+      }}
     }}
-
-    Agora, processe o prompt do usuário.
-    '''
+    ```
+    Agora, processe o pedido e gere o JSON.
+    """
 
     try:
         genai.configure(api_key=API_KEY)
@@ -152,19 +144,21 @@ def gemini_endpoint(request):
         response = model.generate_content(
             structured_prompt,
             generation_config={
-                "temperature": 0.1,
-                "top_p": 1,
-                "top_k": 1,
-                "max_output_tokens": 2048,
+                "temperature": 0.0,
                 "response_mime_type": "application/json",
             },
             stream=False,
         )
-        
-        print(json.dumps({"severity": "INFO", "message": "Sending successful response", "payload": response.text}))
+
+        try:
+            # Valida se o modelo realmente retornou um JSON
+            json.loads(response.text)
+        except json.JSONDecodeError:
+            # Se não for JSON, lança um erro para ser pego abaixo
+            raise ValueError("Model returned invalid JSON.")
+
         return (response.text, 200, headers)
 
     except Exception as e:
-        print(json.dumps({"severity": "ERROR", "message": f"An internal error occurred: {str(e)}"}), file=sys.stderr)
-        error_payload = {"status": "error", "message": f"Ocorreu um erro interno: {str(e)}"}
+        error_payload = {"status": "error", "message": f"An internal error occurred: {str(e)}"}
         return (json.dumps(error_payload), 500, headers)

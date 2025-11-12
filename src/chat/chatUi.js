@@ -1,7 +1,8 @@
 import { escapeText } from '../utils/sanitizers.js';
 import { get as getDomRefs } from '../utils/domRefs.js';
 import { getAiResponse } from '../services/gemini.js';
-import { handleAiResponse } from '../state/orchestrator.js'; // Import the orchestrator
+import { handleAiResponse } from '../state/orchestrator.js';
+import { getState } from '../state/appState.js';
 
 const { messageList, chatForm, chatInput, bubbleArea } = getDomRefs();
 
@@ -92,12 +93,12 @@ export function bindUserMessageHandler(chatId, addMessageFn) {
     // --- AI Response Flow ---
     showTypingIndicator();
 
-    const aiResponse = await getAiResponse(userInput);
+    const currentState = getState();
+    const aiResponse = await getAiResponse(userInput, currentState);
 
     hideTypingIndicator();
 
     // --- State Update --- 
-    // NEW: Pass the entire response to the orchestrator to handle state changes.
     handleAiResponse(aiResponse);
 
     if (aiResponse && aiResponse.message) {
