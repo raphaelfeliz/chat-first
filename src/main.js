@@ -1,3 +1,5 @@
+console.log('[main.js] Script starting...');
+
 import { get as getDomRefs } from './ui/domRefs.js';
 import { init as initFirebase, getDb } from './messageSetup/firebase.js';
 import { createChat, subscribe, addMessage } from './messageSetup/chat.js';
@@ -5,39 +7,57 @@ import { create as createUserMessageListener } from './messageHandling/userMessa
 import { appendBatch } from './messageHandling/generalMessageDisplayer.js';
 import { bind as bindUserMessageHandler } from './messageHandling/userMessageHandler.js';
 
-const { chatIdDisplay } = getDomRefs();
-
+console.log('[main.js] DOMContentLoaded listener attached.');
 document.addEventListener("DOMContentLoaded", async () => {
+  console.log('[main.js] DOMContentLoaded event fired.');
+
+  const { chatIdDisplay } = getDomRefs();
+
+  console.log('[main.js] Initializing Firebase...');
   initFirebase();
   const db = getDb();
-  if (!db) return; // Firebase init failed; bailout
+  if (!db) {
+    console.error('[main.js] Firebase init failed; bailing out.');
+    return;
+  } 
+  console.log('[main.js] Firebase initialized successfully.');
+
 
   try {
-    // Create a new chat session
+    console.log('[main.js] Creating new chat session...');
     const { chatId } = await createChat();
     if (chatIdDisplay) chatIdDisplay.textContent = `Chat ID: ${chatId}`;
+    console.log(`[main.js] Chat session created with ID: ${chatId}`);
 
-    // Prepare listener: only append new messages
     const listener = createUserMessageListener((newMessages) => {
       appendBatch(newMessages);
     });
 
-    // Subscribe to this chat's messages
+    console.log(`[main.js] Subscribing to chat messages for chat ID: ${chatId}`);
     subscribe(
       chatId,
       (messages) => {
         listener.onMessagesChanged(messages);
       },
       (err) => {
+        console.error(`[main.js] Error listening to chat for ID ${chatId}:`, err);
         if (chatIdDisplay) chatIdDisplay.textContent = "Error listening to chat.";
       }
     );
 
-    // Bind the form handler for sending messages
+    console.log('[main.js] Binding user message handler...');
     bindUserMessageHandler(chatId, addMessage);
+    console.log('[main.js] User message handler bound.');
 
   } catch (e) {
-    console.error("Error starting chat:", e);
+    console.error("[main.js] Error starting chat:", e);
     if (chatIdDisplay) chatIdDisplay.textContent = "Error starting chat.";
   }
+
+  console.log('[main.js] Loading configurator engine...');
+  import('./core/engine/configuratorEngine.js').then(() => {
+    console.log('[main.js] Configurator engine loaded successfully.');
+  }).catch(error => {
+    console.error('[main.js] Failed to load configurator engine:', error);
+  });
 });

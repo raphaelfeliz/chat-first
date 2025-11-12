@@ -1,4 +1,14 @@
-import { PRODUCT_CATALOG, BASE_PRODUCT_URL } from './productDatabase.js';
+console.log("[configuratorEngine.js] Script starting...");
+
+try {
+  const startTime = performance.now();
+  console.log("[configuratorEngine.js] Attempting to import from '../../data/productCatalog.js'");
+  var { PRODUCT_CATALOG, BASE_PRODUCT_URL } = await import('../../data/productCatalog.js');
+  const endTime = performance.now();
+  console.log(`[configuratorEngine.js] Successfully imported from '../../data/productCatalog.js' in ${(endTime - startTime).toFixed(2)}ms`);
+} catch (error) {
+  console.error("[configuratorEngine.js] Failed to import from '../../data/productCatalog.js'", error);
+}
 
     /* ================================================
      * FACET & ENGINE DEFINITIONS
@@ -46,7 +56,7 @@ import { PRODUCT_CATALOG, BASE_PRODUCT_URL } from './productDatabase.js';
       persiana: 'persiana',
       motorizada: 'persianaMotorizada',
       material: 'material',
-      folhas: 'folhasNumber'
+      folhas: 'folhas'
     };
 
     function getProductField(product, uiFacet) {
@@ -99,6 +109,7 @@ import { PRODUCT_CATALOG, BASE_PRODUCT_URL } from './productDatabase.js';
     }
 
     function runFacetLoop(selections, startAfterFacet) {
+      console.log("[configuratorEngine.js] Running facet loop with selections:", selections);
       let workingSelections = { ...selections };
       let filtered = applyFilters(workingSelections, PRODUCT_CATALOG);
       
@@ -142,6 +153,7 @@ import { PRODUCT_CATALOG, BASE_PRODUCT_URL } from './productDatabase.js';
      * ================================================ */
 
     function createOptionCard(label, facet, value, imageUrl) {
+      console.log(`[configuratorEngine.js] Creating option card with image URL: ${imageUrl}`);
       const card = document.createElement('article');
       card.className = 'border rounded-lg p-4 bg-white shadow-sm cursor-pointer hover:bg-blue-50 hover:shadow-md transition-all transform hover:-translate-y-1 active:scale-95 flex flex-col items-center';
       
@@ -158,6 +170,7 @@ import { PRODUCT_CATALOG, BASE_PRODUCT_URL } from './productDatabase.js';
 
     function createProductCard(product) {
       if (!product) return document.createElement('div');
+      console.log(`[configuratorEngine.js] Creating product card with image URL: ${product.image}`);
       
       const card = document.createElement('article');
       card.className = 'border rounded-lg p-4 bg-white shadow-sm';
@@ -222,8 +235,8 @@ import { PRODUCT_CATALOG, BASE_PRODUCT_URL } from './productDatabase.js';
       const state = runFacetLoop(userSelections, currentFacet);
       userSelections = state.selections;
       renderEngineState(state);
-      console.log("New State:", state);
-      console.log("User Selections:", userSelections);
+      console.log("[configuratorEngine.js] New State:", state);
+      console.log("[configuratorEngine.js] User Selections:", userSelections);
       return state;
     }
 
@@ -234,6 +247,7 @@ import { PRODUCT_CATALOG, BASE_PRODUCT_URL } from './productDatabase.js';
       get state() { return { userSelections, currentFacet }; },
       
       applySelection: (facet, value) => {
+        console.log(`[configuratorEngine.js] Applying selection - Facet: ${facet}, Value: ${value}`);
         userSelections = applySelection(userSelections, facet, value);
         currentFacet = facet;
         return recomputeAndRender();
@@ -243,4 +257,5 @@ import { PRODUCT_CATALOG, BASE_PRODUCT_URL } from './productDatabase.js';
     };
 
     // Initial render
+    console.log("[configuratorEngine.js] Initial render call.");
     recomputeAndRender();

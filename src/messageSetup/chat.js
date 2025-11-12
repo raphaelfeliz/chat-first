@@ -62,7 +62,7 @@ export function subscribe(chatId, onSnapshotMessages, onError) {
 
 export async function addMessage(chatId, message) {
   const db = getDb();
-  if (!db) throw new Error("Firestore not available");
+  if (!db) throw new Error("No chatId");
   if (!chatId) throw new Error("No chatId");
 
   const docRef = db.collection("chats").doc(chatId);
