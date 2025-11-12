@@ -19,6 +19,7 @@
     body {
       background-color: var(--primary-bg);
       color: var(--text-color);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
     #bubble-area {
@@ -113,6 +114,33 @@
       width: 50%;
       max-width: 400px;
       flex-shrink: 0;
+    }
+
+    .whatsapp-bubble {
+        display: inline-block;
+        background-color: #25D366;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 20px;
+        text-decoration: none;
+        font-weight: bold;
+        box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+        transition: all 0.3s ease;
+        animation: glow 1.5s infinite alternate;
+    }
+
+    .whatsapp-bubble:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(37, 211, 102, 0.6);
+    }
+
+    @keyframes glow {
+        from {
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+        }
+        to {
+            box-shadow: 0 4px 25px rgba(37, 211, 102, 0.7);
+        }
     }
   </style>
 </head>

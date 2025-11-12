@@ -1,7 +1,6 @@
 /*
 path: src/main.js
 purpose: Main entry point of the application. Initializes Firebase, the chat session, and the product configurator. It acts as the central orchestrator, managing initialization sequence and event wiring.
-summary: This file sets up the application environment by initializing Firebase and starting the chat session (creating or restoring the chat ID). It establishes the core pub/sub system (`events`) and binds the chat's UI handlers to the chat API. Crucially, it dynamically loads the `configuratorEngine` and passes the event emitter to it, allowing the configurator logic to communicate with the chat UI (e.g., sending new facet questions).
 */
 const VERSION = '1.0.1';
 const VERSION_NAME = 'Unification & Persistence';
@@ -69,7 +68,10 @@ function handleHandoffLogic(newState) {
 
     if (newState.userData.talkToHuman !== true) {
         console.log("🟢 Handoff Inactive. No action taken.");
-        lastHandoffMessage = ''; // Reset tracker when handoff is not active
+        if (lastHandoffMessage !== '') {
+            console.log("🔄 Resetting handoff tracker.");
+            lastHandoffMessage = ''; // Reset tracker only when handoff state changes from active to inactive
+        }
         console.groupEnd();
         return;
     }
@@ -97,12 +99,24 @@ function handleHandoffLogic(newState) {
 
         console.group("🔗 Generating WhatsApp Link");
         const userName = userData.userName || "Cliente";
+        
+        // Filter out null/empty values from productChoice
         const productValues = Object.values(productChoice).filter(val => val !== null && val !== "");
-        let productString = productValues.length > 0 ? productValues.join(', ') : "esquadrias";
-        const textMessage = `Meu nome é ${userName}. Gostaria de informações sobre: ${productString}.`;
+        
+        let productString;
+        if (productValues.length > 0) {
+            // Join with newline for the message text
+            productString = productValues.join('\n');
+        } else {
+            productString = "esquadrias sob medida";
+        }
+
+        const textMessage = `Olá, meu nome é ${userName},\nTenho interesse em:\n${productString}`;
         const encodedMessage = encodeURIComponent(textMessage);
         const link = `https://api.whatsapp.com/send?phone=5511976810216&text=${encodedMessage}`;
-        console.log("Generated Link:", link);
+        
+        console.log("📝 Generated Message Text:\n", textMessage);
+        console.log("🔗 Generated Full Link:", link);
         console.groupEnd();
 
         const waMessage = {
