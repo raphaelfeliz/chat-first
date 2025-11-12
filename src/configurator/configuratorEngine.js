@@ -4,12 +4,12 @@ import * as appState from '../state/appState.js';
 
 try {
   const startTime = performance.now();
-  console.log("[configuratorEngine.js] Attempting to import from '../../data/productCatalog.js'");
-  var { PRODUCT_CATALOG, BASE_PRODUCT_URL } = await import('../../data/productCatalog.js');
+  console.log("[configuratorEngine.js] Attempting to import from './productCatalog.js'");
+  var { PRODUCT_CATALOG, BASE_PRODUCT_URL } = await import('./productCatalog.js');
   const endTime = performance.now();
-  console.log(`[configuratorEngine.js] Successfully imported from '../../data/productCatalog.js' in ${(endTime - startTime).toFixed(2)}ms`);
+  console.log(`[configuratorEngine.js] Successfully imported from './productCatalog.js' in ${(endTime - startTime).toFixed(2)}ms`);
 } catch (error) {
-  console.error("[configuratorEngine.js] Failed to import from '../../data/productCatalog.js'", error);
+  console.error("[configuratorEngine.js] Failed to import from './productCatalog.js'", error);
 }
 
 // ================================================

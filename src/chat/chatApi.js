@@ -1,5 +1,5 @@
-import { getDb, serverTimestamp, arrayUnion } from './firebase.js';
-import { initializeAppState } from '../core/state/appState.js';
+import { getDb, serverTimestamp, arrayUnion } from '../config/firebase.js';
+import { initializeAppState } from '../state/appState.js';
 
 export async function createChat() {
   const db = getDb();

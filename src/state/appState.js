@@ -3,7 +3,7 @@
  * Manages both user data and product choices, providing a single source of truth.
  * Implements a publish/subscribe pattern to notify other modules of state changes.
  */
-import { getDb } from '../../messageSetup/firebase.js';
+import { getDb } from '../config/firebase.js';
 
 // 1. Private state object
 const _state = {

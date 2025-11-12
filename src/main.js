@@ -2,12 +2,10 @@ const VERSION = '1.0.1';
 const VERSION_NAME = 'Unification & Persistence';
 console.log(`[main.js] STARTING APP - Version: ${VERSION} (${VERSION_NAME})`);
 
-import { get as getDomRefs } from '../ui/domRefs.js';
-import { init as initFirebase, getDb } from '../messageSetup/firebase.js';
-import { createChat, subscribe, addMessage } from '../messageSetup/chat.js';
-import { create as createUserMessageListener } from '../messageHandling/userMessageListener.js';
-import { appendBatch } from '../messageHandling/generalMessageDisplayer.js';
-import { bind as bindUserMessageHandler } from '../messageHandling/userMessageHandler.js';
+import { init as initFirebase, getDb } from './config/firebase.js';
+import { createChat, subscribe, addMessage } from './chat/chatApi.js';
+import { appendBatch, bindUserMessageHandler, createUserMessageListener } from './chat/chatUi.js';
+
 
 console.log('[main.js] DOMContentLoaded listener attached.');
 document.addEventListener("DOMContentLoaded", async () => {
@@ -52,7 +50,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   console.log('[main.js] Loading configurator engine...');
-  import('../core/engine/configuratorEngine.js').then(() => {
+  import('./configurator/configuratorEngine.js').then(() => {
     console.log('[main.js] Configurator engine loaded successfully.');
   }).catch(error => {
     console.error('[main.js] Failed to load configurator engine:', error);
