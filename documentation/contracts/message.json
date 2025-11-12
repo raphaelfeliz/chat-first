@@ -1,0 +1,7 @@
+{
+    "userType": "human",
+    "bubbleType": "chat-bubble",
+    "text": "The user's message text",
+    "link": null,
+    "timestamp": "A JavaScript Date object"
+  }

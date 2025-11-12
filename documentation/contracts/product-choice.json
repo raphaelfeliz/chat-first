@@ -1,0 +1,8 @@
+{
+    "categoria": "string | null",
+    "sistema": "string | null",
+    "persiana": "string | null",
+    "motorizada": "string | null",
+    "material": "string | null",
+    "folhas": "string | null"
+}

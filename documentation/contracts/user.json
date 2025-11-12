@@ -1,0 +1,5 @@
+{
+    "userName": "string | null",
+    "userPhone": "string | null",
+    "userEmail": "string | null"
+}

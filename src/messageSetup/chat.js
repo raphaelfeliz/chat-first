@@ -1,4 +1,5 @@
 import { getDb, serverTimestamp, arrayUnion } from './firebase.js';
+import { initializeAppState } from '../core/state/appState.js';
 
 export async function createChat() {
   const db = getDb();
@@ -35,6 +36,10 @@ export async function createChat() {
   };
 
   await docRef.set(newChatData);
+
+  // Initialize the global state with the new chat's data
+  initializeAppState(newChatData);
+
   return { chatId };
 }
 
@@ -43,13 +48,22 @@ export function subscribe(chatId, onSnapshotMessages, onError) {
   if (!db) throw new Error("Firestore not available");
   const docRef = db.collection("chats").doc(chatId);
 
+  let isFirstSnapshot = true;
+
   return docRef.onSnapshot(
     (snap) => {
       if (!snap.exists) {
         console.error("Chat document not found:", chatId);
         return;
       }
-      const data = snap.data() || {};
+      const data = { id: snap.id, ...snap.data() };
+
+      // On the first snapshot for an existing chat, initialize the app state.
+      if (isFirstSnapshot) {
+        initializeAppState(data);
+        isFirstSnapshot = false;
+      }
+
       const messages = Array.isArray(data.messages) ? data.messages : [];
       onSnapshotMessages(messages);
     },
