@@ -19,7 +19,7 @@ export async function createChat() {
       {
         userType: "bot",
         bubbleType: "chat-bubble",
-        text: "Hello! How can I help you with our products today?",
+        text: "Olá, como eu posso ajudar?",
         link: null,
         timestamp: new Date()
       }

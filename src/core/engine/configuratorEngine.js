@@ -155,12 +155,13 @@ try {
     function createOptionCard(label, facet, value, imageUrl) {
       console.log(`[configuratorEngine.js] Creating option card with image URL: ${imageUrl}`);
       const card = document.createElement('article');
-      card.className = 'border rounded-lg p-4 bg-white shadow-sm cursor-pointer hover:bg-blue-50 hover:shadow-md transition-all transform hover:-translate-y-1 active:scale-95 flex flex-col items-center';
+      card.className = 'option-card rounded-lg shadow-sm cursor-pointer transform hover:-translate-y-1 active:scale-95';
       
-      const img = `<img src="${imageUrl}" alt="${label}" class="mb-3 rounded-md w-full h-32 object-contain">`;
-      const title = `<h3 class="font-bold text-lg text-center text-blue-700">${label}</h3>`;
+      const img = `<img src="${imageUrl}" alt="${label}">`;
+      const imageWrapper = `<div class="image-wrapper">${img}</div>`;
+      const textContainer = `<div class="card-text-container"><h3 class="option-card-title">${label}</h3></div>`;
 
-      card.innerHTML = `${img}${title}`;
+      card.innerHTML = `${imageWrapper}${textContainer}`;
       
       card.addEventListener('click', () => {
         window.ConfigEngine.applySelection(facet, value);
@@ -173,16 +174,18 @@ try {
       console.log(`[configuratorEngine.js] Creating product card with image URL: ${product.image}`);
       
       const card = document.createElement('article');
-      card.className = 'border rounded-lg p-4 bg-white shadow-sm';
+      card.className = 'product-card rounded-lg shadow-sm';
       
       const productName = product.slug.split('/').pop().replace('.php', '').replace(/-/g, ' ');
       const productLink = `${BASE_PRODUCT_URL}${product.slug}`;
 
-      const img = `<img src="${product.image}" alt="${productName}" class="mb-2 rounded" />`;
-      const title = `<h3 class="font-bold text-lg"><a href="${productLink}" target="_blank" class="hover:underline">${productName}</a></h3>`;
-      const price = `<p class="text-gray-600">Preço sob consulta</p>`;
+      const img = `<img src="${product.image}" alt="${productName}" />`;
+      const imageWrapper = `<div class="image-wrapper">${img}</div>`;
+      const title = `<h3 class="product-card-title"><a href="${productLink}" target="_blank" class="hover:underline">${productName}</a></h3>`;
+      const price = `<p class="product-card-price">Preço sob consulta</p>`;
+      const textContainer = `<div class="card-text-container">${title}${price}</div>`;
       
-      card.innerHTML = `${img}${title}${price}`;
+      card.innerHTML = `${imageWrapper}${textContainer}`;
       return card;
     }
 

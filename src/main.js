@@ -11,8 +11,6 @@ console.log('[main.js] DOMContentLoaded listener attached.');
 document.addEventListener("DOMContentLoaded", async () => {
   console.log('[main.js] DOMContentLoaded event fired.');
 
-  const { chatIdDisplay } = getDomRefs();
-
   console.log('[main.js] Initializing Firebase...');
   initFirebase();
   const db = getDb();
@@ -26,7 +24,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     console.log('[main.js] Creating new chat session...');
     const { chatId } = await createChat();
-    if (chatIdDisplay) chatIdDisplay.textContent = `Chat ID: ${chatId}`;
     console.log(`[main.js] Chat session created with ID: ${chatId}`);
 
     const listener = createUserMessageListener((newMessages) => {
@@ -41,7 +38,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       },
       (err) => {
         console.error(`[main.js] Error listening to chat for ID ${chatId}:`, err);
-        if (chatIdDisplay) chatIdDisplay.textContent = "Error listening to chat.";
       }
     );
 
@@ -51,7 +47,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   } catch (e) {
     console.error("[main.js] Error starting chat:", e);
-    if (chatIdDisplay) chatIdDisplay.textContent = "Error starting chat.";
   }
 
   console.log('[main.js] Loading configurator engine...');

@@ -6,7 +6,6 @@ export function get() {
     chatForm: document.getElementById("input-area"),
     chatInput: document.getElementById("chat-input"),
     messageList: document.getElementById("bubble-area"),
-    chatIdDisplay: document.getElementById("chat-id-display"),
   };
   return _cache;
 }

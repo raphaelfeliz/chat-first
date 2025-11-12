@@ -7,61 +7,149 @@
   <!-- Tailwind CSS -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
   <style>
-    /* Hide scrollbar in chat area */
-    #bubble-area {
-      scrollbar-width: none;          /* Firefox */
-      -ms-overflow-style: none;     /* IE/Edge */
+    /* Custom color palette */
+    :root {
+      --primary-bg: #1a202c; /* Charcoal-blue */
+      --secondary-bg: #2d3748; /* Lighter charcoal-blue */
+      --accent-color: #4299e1; /* Vibrant light blue */
+      --text-color: #ffffff; /* White */
+      --border-color: #4a5568; /* Gray */
     }
+
+    body {
+      background-color: var(--primary-bg);
+      color: var(--text-color);
+    }
+
+    #bubble-area {
+      background-color: var(--secondary-bg);
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
     #bubble-area::-webkit-scrollbar {
-      display: none;              /* Chrome/Safari/Opera */
+      display: none;
+    }
+
+    #input-area {
+      background-color: var(--primary-bg);
+      border-top: 1px solid var(--border-color);
+    }
+
+    #chat-input {
+      background-color: var(--secondary-bg);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+    }
+
+    #chat-input:focus {
+      outline: none;
+      ring: 2px;
+      ring-color: var(--accent-color);
+    }
+
+    button {
+      background-color: var(--accent-color);
+      color: var(--text-color);
+    }
+
+    button:hover {
+      background-color: #2b6cb0; /* Darker blue on hover */
+    }
+
+    .facet-question {
+        color: var(--text-color);
+    }
+
+    .option-card, .product-card {
+      background-color: var(--secondary-bg);
+      border: 1px solid var(--border-color);
+      transition: all 0.2s ease-in-out;
+      overflow: hidden; /* Ensures image corners are clipped */
+      border-radius: 0.5rem; /* rounded-lg */
+      display: flex;
+      flex-direction: column;
+      width: 25vh;
+      max-width: 100%;
+      justify-self: center;
+    }
+
+    .option-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-color: var(--accent-color);
+    }
+
+    .image-wrapper {
+      aspect-ratio: 1 / 1;
+      width: 100%;
+      background-color: white;
+    }
+
+    .option-card img, .product-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    
+    .card-text-container {
+      padding: 0.75rem; /* p-3 */
+      text-align: center;
+    }
+
+    .option-card-title, .product-card-title a {
+      color: var(--text-color);
+      font-size: 0.875rem; /* 14px */
+      min-height: 12px;
+      font-weight: bold;
+    }
+
+    .product-card-price {
+      color: var(--text-color);
+      font-size: 0.75rem; /* 12px */
+    }
+
+    #chat-section {
+      width: 50%;
+      max-width: 400px;
+      flex-shrink: 0;
     }
   </style>
 </head>
-<body class="bg-gray-100 flex flex-col h-screen font-sans">
+<body class="flex flex-col h-screen font-sans">
 
   <div class="flex flex-1 overflow-hidden">
     <!-- Left: Product Selection / Options -->
-    <section class="w-1/2 p-4 border-r border-gray-200 overflow-y-auto bg-gray-50">
-      <div class="mb-4"> <!-- Increased margin-bottom -->
-        <h2 class="text-2xl font-bold">Products</h2>
+    <section id="configurator-section" class="flex-1 p-4 border-r border-gray-700 overflow-y-auto">
+      <div class="mb-4">
         <!-- Current facet question will render here -->
-        <p id="facet-question" class="text-lg text-gray-700 mt-1"></p> <!-- Made text larger -->
+        <p id="facet-question" class="text-lg mt-1 facet-question"></p>
       </div>
 
-      <!-- 
-        This grid is now dynamic. 
-        It will be filled with clickable "option" cards or the final "product" card.
-      -->
-      <div id="option-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div id="option-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-2 gap-y-4">
         <!-- JS will populate this. -->
       </div>
     </section>
 
     <!-- Right: Chat Interface -->
-    <section class="w-1/2 flex flex-col bg-white shadow-inner">
-      <!-- Header -->
-      <header class="p-4 bg-white border-b border-gray-200">
-        <h2 class="text-xl font-bold">Support Chat</h2>
-        <p id="chat-id-display" class="text-xs text-gray-500">Connecting...</p>
-      </header>
-
+    <section id="chat-section" class="flex flex-col shadow-inner">
       <!-- Message Area -->
-      <main id="bubble-area" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      <main id="bubble-area" class="flex-1 overflow-y-auto p-4 space-y-4">
         <!-- Chat messages will be appended here -->
       </main>
 
       <!-- Input Area -->
-      <form id="input-area" class="flex p-4 bg-white border-t border-gray-200">
+      <form id="input-area" class="flex p-4">
         <input
           type="text"
           id="chat-input"
-          class="flex-1 p-3 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="flex-1 p-3 rounded-l-lg"
           placeholder="Type your message..."
           autocomplete="off"
         />
         <button
           type="submit"
-          class="bg-blue-600 text-white p-3 rounded-r-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="p-3 rounded-r-lg"
           aria-label="Send message"
           title="Send"
         >
@@ -78,10 +166,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-  <!-- 
-    Main Application Logic (chat) 
-    This file would connect to Firebase and use `window.ConfigEngine`
-  -->
+  <!-- Main Application Logic (chat) -->
   <script type="module" src="src/main.js"></script>
 
   <!-- Configurator Engine -->
