@@ -4,7 +4,33 @@ console.log(`[main.js] STARTING APP - Version: ${VERSION} (${VERSION_NAME})`);
 
 import { init as initFirebase, getDb } from './config/firebase.js';
 import { createChat, subscribe, addMessage } from './chat/chatApi.js';
-import { appendBatch, bindUserMessageHandler, createUserMessageListener } from './chat/chatUi.js';
+import { appendBatch, bindUserMessageHandler, createUserMessageListener, addAiMessageFromFacet } from './chat/chatUi.js';
+
+// Create a simple event emitter
+const events = {
+  listeners: {},
+  on(event, callback) {
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
+    }
+    this.listeners[event].push(callback);
+    console.log(JSON.stringify({
+        source: 'main.js',
+        step: 'events.on',
+        payload: { event, listeners: this.listeners[event].length }
+    }));
+  },
+  emit(event, payload) {
+    if (this.listeners[event]) {
+        console.log(JSON.stringify({
+            source: 'main.js',
+            step: 'events.emit',
+            payload: { event, listeners: this.listeners[event].length, payload }
+        }));
+      this.listeners[event].forEach(callback => callback(payload));
+    }
+  }
+};
 
 
 console.log('[main.js] DOMContentLoaded listener attached.');
@@ -52,7 +78,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   console.log('[main.js] Loading configurator engine...');
   import('./configurator/configuratorEngine.js').then(() => {
     console.log('[main.js] Configurator engine loaded successfully.');
+    if (window.ConfigEngine && window.ConfigEngine.init) {
+        console.log(JSON.stringify({
+            source: 'main.js',
+            step: 'init.configuratorEngine',
+            payload: { emitter: 'defined' }
+        }));
+        window.ConfigEngine.init(events);
+    } else {
+        console.error('[main.js] Configurator engine did not initialize correctly.');
+    }
   }).catch(error => {
     console.error('[main.js] Failed to load configurator engine:', error);
   });
+
+  // Listen for facet question updates and add to chat UI
+    events.on('facetQuestionUpdated', (question) => {
+        console.log(JSON.stringify({
+            source: 'main.js',
+            step: 'event.facetQuestionUpdated',
+            payload: { question }
+        }));
+        addAiMessageFromFacet(question);
+    });
 });

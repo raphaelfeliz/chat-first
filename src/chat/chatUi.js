@@ -44,6 +44,18 @@ function scrollToBottom() {
   messageList.scrollTop = messageList.scrollHeight;
 }
 
+export function addAiMessageFromFacet(question) {
+    const aiMessage = {
+        userType: "ai",
+        bubbleType: "chat-bubble",
+        text: question,
+        link: null,
+        timestamp: new Date()
+    };
+
+    appendBatch([aiMessage]);
+}
+
 export function bindUserMessageHandler(chatId, addMessageFn) {
   if (!chatForm || !chatInput) return;
 

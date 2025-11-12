@@ -12,9 +12,14 @@ try {
   console.error("[configuratorEngine.js] Failed to import from './productCatalog.js'", error);
 }
 
-// ================================================
+// ===============================================
+// MODULE STATE
+// ===============================================
+let eventEmitter = null;
+
+// ===============================================
 // FACET & ENGINE DEFINITIONS
-// ================================================
+// ===============================================
 const FACET_ORDER = ['categoria', 'sistema', 'persiana', 'motorizada', 'material', 'folhas'];
 
 const FACET_DEFINITIONS = {
@@ -105,9 +110,9 @@ function runFacetLoop(selections) {
   return { selections: workingSelections, finalProduct: filtered.length > 0, finalProducts: filtered, currentQuestion: null };
 }
 
-// ================================================
+// ===============================================
 // RENDERING FUNCTIONS
-// ================================================
+// ===============================================
 
 function createOptionCard(label, facet, value, imageUrl) {
   const card = document.createElement('article');
@@ -144,6 +149,16 @@ function renderEngineState(state) {
   } else if (state.currentQuestion) {
     const { attribute, title, options } = state.currentQuestion;
     questionEl.textContent = title;
+
+    if (eventEmitter && eventEmitter.emit) {
+      console.log(JSON.stringify({
+          source: 'configuratorEngine.js',
+          step: 'emitEvent',
+          payload: { event: 'facetQuestionUpdated', question: title }
+      }));
+      eventEmitter.emit('facetQuestionUpdated', title);
+    }
+
     const def = FACET_DEFINITIONS[attribute] || { labelMap: {} };
     const possibleProducts = state.finalProducts || [];
 
@@ -158,9 +173,9 @@ function renderEngineState(state) {
   }
 }
 
-// ================================================
+// ===============================================
 // PUBLIC API & INITIALIZATION
-// ================================================
+// ===============================================
 
 function renderLatestState() {
   console.log("[configuratorEngine.js:renderLatestState] SUBSCRIBER TRIGGERED: State has changed. Re-rendering UI.");
@@ -179,6 +194,11 @@ window.ConfigEngine = {
   FACET_ORDER,
   FACET_DEFINITIONS,
 
+  init: (emitter) => {
+    console.log("[configuratorEngine.js:init] Initializing with event emitter.");
+    eventEmitter = emitter;
+  },
+
   applySelection: (facet, value) => {
     console.log(`[configuratorEngine.js:applySelection] User clicked. Facet: "${facet}", Value: "${value}"`);
     console.log("[configuratorEngine.js:applySelection] Reading current state from appState...");
@@ -189,8 +209,6 @@ window.ConfigEngine = {
     console.log("[configuratorEngine.js:applySelection] Calculated next state to be:", nextSelections);
 
     console.log("[configuratorEngine.js:applySelection] Dispatching 'updateProductChoice' to appState to persist and notify...");
-    // THIS IS THE FIX: Dispatch the complete next state to the global manager.
-    // This returns a promise that resolves after the state is persisted in Firestore.
     appState.updateProductChoice(nextSelections).then(() => {
       console.log("[configuratorEngine.js:applySelection] 'updateProductChoice' has completed (state persisted).");
     });

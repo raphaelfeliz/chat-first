@@ -1,99 +1,40 @@
-# Investigation Result
+# Investigation Result: Automatic Facet Question in Chat
 
-This document summarizes the findings of the investigation phase for the Gemini Cloud Function integration. It provides a comprehensive overview of the application's architecture, data schemas, and the current implementation of the AI service.
+This document summarizes the findings of the investigation phase and outlines the execution plan for automatically adding a chat bubble with the latest configurator facet question.
 
-## 1. Data Schemas
+## 1. Findings
 
-This section details the JSON schemas used in the application.
+### 1.1. `src/configurator/configuratorEngine.js`
 
-### 1.1. `message.json`
+*   **Source:** `src/configurator/configuratorEngine.js`
+*   **Key Function:** `renderEngineState(state)` is the function responsible for rendering the configurator's UI.
+*   **Question Source:** Inside `renderEngineState`, the next question's text is available in the `state.currentQuestion.title` property.
+*   **Trigger Point:** The ideal place to trigger the new functionality is within `renderEngineState`, immediately after the `questionEl.textContent = title;` line.
 
-*   **Source:** `documentation/contracts/message.json`
-*   **Description:** Defines the structure of a single chat message.
-*   **Schema:**
-    ```json
-    {
-        "userType": "string",
-        "bubbleType": "string",
-        "text": "string",
-        "link": "string | null",
-        "timestamp": "object"
-    }
-    ```
-*   **Notes:**
-    *   `userType`: Indicates whether the message is from a "human" or "ai".
-    *   `bubbleType`: Used for UI styling.
-    *   `timestamp`: The contract mentions a "JavaScript Date object", which is ambiguous for JSON. This will likely be handled by Firestore's `serverTimestamp()` or a similar mechanism.
+### 1.2. `src/chat/chatUi.js`
 
-### 1.2. `product-choice.json`
+*   **Source:** `src/chat/chatUi.js`
+*   **Key Function:** The file contains a function `createMessageElement(message)` which creates the DOM for a message. The exported function `appendBatch(messages)` adds an array of message elements to the chat.
+*   **Message Creation:** The `bindUserMessageHandler` function demonstrates how to create a message object and how to use an `addMessageFn` (passed from `main.js`) to add it to the chat's data store. The key is to construct a message object like `{ userType: "ai", text: "..." }` and call `addMessageFn`.
 
-*   **Source:** `documentation/contracts/product-choice.json` and `src/configurator/productCatalog.js`
-*   **Description:** Represents the user's selected product configuration.
-*   **Schema:**
-    ```json
-    {
-        "categoria": "string | null",
-        "sistema": "string | null",
-        "persiana": "string | null",
-        "motorizada": "string | null",
-        "material": "string | null",
-        "folhas": "string | null"
-    }
-    ```
-*   **Enumerations:**
-    *   `categoria`: "janela", "porta"
-    *   `sistema`: "janela-correr", "porta-correr", "maxim-ar", "giro"
-    *   `persiana`: "sim", "nao"
-    *   `persianaMotorizada`: "motorizada", "manual", null
-    *   `material`: "vidro", "vidro + veneziana", "lambri", "veneziana", "vidro + lambri"
-    *   `folhas`: 1, 2, 3, 4, 6
-
-### 1.3. `user.json`
-
-*   **Source:** `documentation/contracts/user.json`
-*   **Description:** Represents user-specific data.
-*   **Schema:**
-    ```json
-    {
-        "userName": "string | null",
-        "userPhone": "string | null",
-        "userEmail": "string | null"
-    }
-    ```
-
-## 2. Application Flow
-
-This section describes the application's high-level execution flow, from initialization to message handling.
-
-### 2.1. Initialization
+### 1.3. `src/main.js`
 
 *   **Source:** `src/main.js`
-*   **Flow:**
-    1.  The `DOMContentLoaded` event triggers the application's initialization.
-    2.  `initFirebase()` is called to set up the Firebase connection.
-    3.  `createChat()` is called to create a new chat session in Firestore, which returns a `chatId`.
-    4.  The application subscribes to the chat document in Firestore using the `chatId`.
-    5.  `bindUserMessageHandler()` is called to set up the event listener for the chat input form.
-    6.  The `configuratorEngine.js` module is loaded.
+*   **Wiring:** This file is the central hub. It imports `addMessage` from `src/chat/chatApi.js` and passes it to `bindUserMessageHandler` in `src/chat/chatUi.js`. It also dynamically imports and initializes `configuratorEngine.js`.
+*   **Communication:** There is no direct communication channel between `configuratorEngine.js` and `chatUi.js`. A new mechanism is needed to allow the configurator to trigger an action in the chat UI.
 
-### 2.2. Message Handling
+## 2. Execution Plan
 
-*   **Source:** `src/chat/chatUi.js`, `src/chat/chatApi.js` (and `src/services/gemini.js` for the mock AI response)
-*   **Flow:**
-    1.  The user types a message in the chat input and submits the form.
-    2.  The `submit` event listener in `bindUserMessageHandler()` in `src/chat/chatUi.js` is triggered.
-    3.  A `message` object is created with `userType: "human"`.
-    4.  `addMessage()` from `src/chat/chatApi.js` is called with the `chatId` and the `message` object.
-    5.  `addMessage()` adds the user's message to the `messages` array in the chat document in Firestore.
+To avoid tightly coupling the `configuratorEngine` and `chatUi`, the best approach is to create a simple, centralized event bus in `main.js`. This will allow the modules to communicate indirectly.
 
-## 3. Mock AI Service
+### Step 1: Create a Centralized Event Emitter in `main.js`
 
-*   **Source:** `src/services/gemini.js`
-*   **Description:** The current implementation uses a mock AI service that will be replaced with a call to the Gemini Cloud Function.
-*   **Function:** `getAiResponse(userInput)`
-*   **Logic:**
-    *   It's an `async` function that simulates a network delay with `setTimeout`.
-    *   It uses simple keyword matching to return hardcoded string responses.
-    *   It returns a `Promise<string>`.
+A simple event emitter will be created in `main.js` to act as a message broker between modules.
 
-This concludes the investigation phase. The information gathered here will be used to create a detailed execution plan for integrating the Gemini Cloud Function.
+### Step 2: Modify `configuratorEngine.js` to Emit an Event
+
+The `configuratorEngine` will be given the `emit` function from the event emitter. It will call this function whenever a new facet question is rendered, passing the question text as the payload.
+
+### Step 3: Modify `chatUi.js` and `main.js` to Listen for the Event
+
+A new function, `addAiMessage`, will be added to `chatUi.js`. In `main.js`, a listener will be set up for the `facetQuestionUpdated` event. When the event is fired, this listener will call `addAiMessage`, passing the question text and the `addMessage` function from `chatApi.js`.
