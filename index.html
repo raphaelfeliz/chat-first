@@ -36,6 +36,16 @@
       background-color: var(--primary-bg);
       border-top: 1px solid var(--border-color);
     }
+    
+    /* Scoped button styles to input area */
+    #input-area button {
+      background-color: var(--accent-color);
+      color: var(--text-color);
+    }
+
+    #input-area button:hover {
+      background-color: #2b6cb0; /* Darker blue on hover */
+    }
 
     #chat-input {
       background-color: var(--secondary-bg);
@@ -47,15 +57,6 @@
       outline: none;
       ring: 2px;
       ring-color: var(--accent-color);
-    }
-
-    button {
-      background-color: var(--accent-color);
-      color: var(--text-color);
-    }
-
-    button:hover {
-      background-color: #2b6cb0; /* Darker blue on hover */
     }
     
     #restart-button {
@@ -86,9 +87,7 @@
       border-radius: 0.5rem; /* rounded-lg */
       display: flex;
       flex-direction: column;
-      width: 25vh;
       max-width: 100%;
-      justify-self: center;
     }
 
     .option-card:hover {
@@ -110,20 +109,20 @@
     }
     
     .card-text-container {
-      padding: 0.75rem; /* p-3 */
+      padding: 0.5rem; /* p-2 */
       text-align: center;
     }
 
     .option-card-title, .product-card-title a {
       color: var(--text-color);
-      font-size: 0.875rem; /* 14px */
+      font-size: 0.8rem; /* ~13px */
       min-height: 12px;
       font-weight: bold;
     }
 
     .product-card-price {
       color: var(--text-color);
-      font-size: 0.75rem; /* 12px */
+      font-size: 0.7rem; /* ~11px */
     }
 
     #chat-section {
@@ -158,20 +157,85 @@
             box-shadow: 0 4px 25px rgba(37, 211, 102, 0.7);
         }
     }
+
+    /* Mobile Navigation and Visibility Logic */
+    @media (max-width: 768px) {
+        #chat-section {
+            width: 100%;
+            max-width: none;
+        }
+
+        body[data-active-tab="configurator"] #chat-section {
+            display: none;
+        }
+        
+        body[data-active-tab="chat"] #configurator-section {
+            display: none;
+        }
+
+        #mobile-nav {
+            background-color: var(--primary-bg);
+            border-bottom: none;
+            display: flex;
+            align-items: center;
+            padding-left: 0.5rem;
+        }
+
+        #mobile-nav button {
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            font-weight: normal;
+            flex-grow: 1;
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            text-decoration: none;
+        }
+        
+        /* Active Tab Style (no hover) */
+        body[data-active-tab="configurator"] #tab-configurator,
+        body[data-active-tab="chat"] #tab-chat {
+            font-weight: bold;
+            text-decoration: underline;
+            text-decoration-color: var(--accent-color);
+            text-decoration-thickness: 2px;
+            text-underline-offset: 4px;
+        }
+
+        /* Active Tab Style (on hover) - no changes */
+        body[data-active-tab="configurator"] #tab-configurator:hover,
+        body[data-active-tab="chat"] #tab-chat:hover {
+            background: transparent;
+            cursor: default;
+        }
+    }
+
+    /* Hide nav on desktop */
+    @media (min-width: 769px) {
+        #mobile-nav {
+            display: none;
+        }
+    }
   </style>
 </head>
-<body class="flex flex-col h-screen font-sans">
+<body class="flex flex-col h-screen font-sans" data-active-tab="configurator">
+
+  <!-- Mobile Navigation Bar -->
+  <nav id="mobile-nav" class="flex text-sm flex-shrink-0">
+    <img src="assets/images/favicon-fabricadoaluminio.png" alt="Logo" class="h-5 w-5 mr-1"/>
+    <button id="tab-configurator" class="flex-1 text-center focus:outline-none">Filtro Rápido</button>
+    <button id="tab-chat" class="flex-1 text-center focus:outline-none">Chat</button>
+  </nav>
 
   <div class="flex flex-1 overflow-hidden">
     <!-- Left: Product Selection / Options -->
     <section id="configurator-section" class="flex-1 p-4 border-r border-gray-700 overflow-y-auto">
       <div class="flex justify-between items-center mb-4">
-        <!-- Current facet question will render here -->
         <p id="facet-question" class="text-lg mt-1 facet-question"></p>
         <button id="restart-button">Recomeçar</button>
       </div>
 
-      <div id="option-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-2 gap-y-4">
+      <div id="option-grid" class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2">
         <!-- JS will populate this. -->
       </div>
     </section>
@@ -198,7 +262,6 @@
           aria-label="Send message"
           title="Send"
         >
-          <!-- Send Icon -->
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
           </svg>
@@ -210,6 +273,25 @@
   <!-- Firebase SDK (v8) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <!-- Mobile Tab Logic -->
+  <script>
+    (function() {
+        const body = document.body;
+        const tabConfigurator = document.getElementById('tab-configurator');
+        const tabChat = document.getElementById('tab-chat');
+
+        if (tabConfigurator && tabChat) {
+            tabConfigurator.addEventListener('click', () => {
+                body.setAttribute('data-active-tab', 'configurator');
+            });
+
+            tabChat.addEventListener('click', () => {
+                body.setAttribute('data-active-tab', 'chat');
+            });
+        }
+    })();
+  </script>
 
   <!-- Main Application Logic (chat) -->
   <script type="module" src="src/main.js"></script>
