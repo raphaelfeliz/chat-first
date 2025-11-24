@@ -1,4 +1,3 @@
-
 /*
 path: src/configurator/configuratorEngine.js
 purpose: Core logic for the product configurator. It translates the application state (product choices) into the next logical question or final product display, and manages the associated UI rendering.
@@ -20,7 +19,6 @@ try {
 // MODULE STATE
 // ===============================================
 let eventEmitter = null;
-let dom = {};
 
 // ===============================================
 // FACET & ENGINE DEFINITIONS
@@ -192,9 +190,8 @@ function createProductCard(product) {
 }
 
 function renderEngineState(state) {
-    const questionEl = dom.facetQuestion;
-    const gridEl = dom.optionGrid;
-
+    const questionEl = document.getElementById('facet-question');
+    const gridEl = document.getElementById('option-grid');
     if (!questionEl || !gridEl) {
         console.error('CRITICAL: Could not find required DOM elements (#facet-question or #option-grid). UI render aborted.');
         return;
@@ -245,11 +242,11 @@ function renderLatestState() {
 }
 
 window.ConfigEngine = {
-    init: (emitter, domCache) => {
+    init: (emitter) => {
         eventEmitter = emitter;
-        dom = domCache;
-        if (dom.restartButton) {
-            dom.restartButton.addEventListener('click', () => {
+        const restartButton = document.getElementById('restart-button');
+        if (restartButton) {
+            restartButton.addEventListener('click', () => {
                 appState.resetProductChoice();
             });
         }
