@@ -27,8 +27,8 @@ const FACET_ORDER = ['categoria', 'sistema', 'persiana', 'motorizada', 'material
 
 const FACET_DEFINITIONS = {
     categoria: { title: 'O que você procura?', labelMap: { janela: 'Janela', porta: 'Porta' } },
-    sistema: { title: 'Qual sistema de abertura você prefere?', labelMap: { 'janela-correr': 'Correr (Janela)', 'porta-correr': 'Correr (Porta)', 'maxim-ar': 'Maxim-ar', 'giro': 'Giro' } },
-    persiana: { title: 'Precisa de persiana integrada?', labelMap: { sim: 'Sim', nao: 'Não' } },
+    sistema: { title: 'Qual sistema de abertura você prefere?', labelMap: { 'janela-correr': 'de Correr', 'porta-correr': 'de Correr', 'maxim-ar': 'Maxim-ar', 'giro': 'de Giro' } },
+    persiana: { title: 'Precisa de persiana integrada?', labelMap: { sim: 'Persiana Integrada', nao: 'Não' } },
     motorizada: { title: 'Persiana motorizada ou manual?', labelMap: { motorizada: 'Motorizada', manual: 'Manual' } },
     material: { title: 'Qual material de preenchimento?', labelMap: { 'vidro': 'Vidro', 'vidro + veneziana': 'Vidro e Veneziana', 'lambri': 'Lambri', 'veneziana': 'Veneziana', 'vidro + lambri': 'Vidro e Lambri' } },
     folhas: { title: 'Quantas folhas?', labelMap: { 1: '1 Folha', 2: '2 Folhas', 3: '3 Folhas', 4: '4 Folhas', 6: '6 Folhas' } }
@@ -134,46 +134,58 @@ function createOptionCard(label, facet, value, imageUrl) {
 
 function createProductCard(product) {
     if (!product) return document.createElement('div');
-    const productName = product.slug.split('/').pop().replace('.php', '').replace(/-/g, ' ');
+
+    const selections = appState.getState().productChoice;
     const card = document.createElement('article');
-    card.className = 'product-card rounded-lg shadow-sm'; // Re-adding styling classes
+    card.className = 'product-card rounded-lg shadow-sm';
     const productLink = `${BASE_PRODUCT_URL}${product.slug}`;
 
-    // Card content (image, title)
+    // --- DYNAMIC TITLE AND CHIPS ---
+    const categoriaLabel = FACET_DEFINITIONS.categoria.labelMap[selections.categoria] || '';
+    const sistemaLabel = FACET_DEFINITIONS.sistema.labelMap[selections.sistema] || '';
+    const h2Title = `${categoriaLabel} ${sistemaLabel}`.trim();
+
+    const chips = [];
+    if (selections.persiana === 'sim') {
+        chips.push(FACET_DEFINITIONS.persiana.labelMap.sim);
+        if (selections.motorizada) {
+            chips.push(FACET_DEFINITIONS.motorizada.labelMap[selections.motorizada]);
+        }
+    }
+    if (selections.material) {
+        chips.push(FACET_DEFINITIONS.material.labelMap[selections.material]);
+    }
+    if (selections.folhas) {
+        chips.push(FACET_DEFINITIONS.folhas.labelMap[selections.folhas]);
+    }
+
+    const chipHTML = chips.map(chip => `<span class="chip">${chip}</span>`).join('');
+
+    // --- CARD CONTENT ---
     const cardContent = document.createElement('div');
-    cardContent.innerHTML = `
-        <div class="image-wrapper"><img src="${product.image}" alt="${productName}" /></div>
-        <div class="card-text-container">
-            <h3 class="product-card-title"><a href="${productLink}" target="_blank" class="hover:underline">${productName}</a></h3>
-        </div>
-    `;
     card.appendChild(cardContent);
 
-    // Button container
-    const buttonContainer = document.createElement('div');
-    buttonContainer.className = 'product-card-buttons';
+    cardContent.innerHTML = `
+        <div class="image-wrapper"><img src="${product.image}" alt="${h2Title}" /></div>
+        <div class="product-card-controls">
+            <h2 class="product-card-main-title">${h2Title}</h2>
+            <div class="product-card-chip-container">${chipHTML}</div>
+            <div class="product-card-buttons">
+                <a href="${productLink}" target="_blank" class="product-card-button btn-view-product">Ver Produto</a>
+                <button class="product-card-button btn-specialist">Falar com Especialista</button>
+            </div>
+        </div>
+    `;
 
-    // "Ver Produto" button
-    const viewButton = document.createElement('a');
-    viewButton.href = productLink;
-    viewButton.target = '_blank';
-    viewButton.className = 'product-card-button btn-view-product';
-    viewButton.textContent = 'Ver Produto';
-    buttonContainer.appendChild(viewButton);
-
-    // "Falar com Especialista" button
-    const specialistButton = document.createElement('button');
-    specialistButton.className = 'product-card-button btn-specialist';
-    specialistButton.textContent = 'Falar com Especialista';
+    // --- EVENT LISTENERS ---
+    const specialistButton = cardContent.querySelector('.btn-specialist');
     specialistButton.addEventListener('click', () => {
         appState.updateUserData({ talkToHuman: true });
         if (window.innerWidth <= 768) {
             document.body.setAttribute('data-active-tab', 'chat');
         }
     });
-    buttonContainer.appendChild(specialistButton);
 
-    card.appendChild(buttonContainer);
     return card;
 }
 
@@ -188,8 +200,12 @@ function renderEngineState(state) {
     questionEl.innerHTML = '';
     gridEl.innerHTML = '';
 
+    // Reset grid classes to default
+    gridEl.className = 'grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2';
+
     if (state.finalProduct && state.finalProducts.length > 0) {
         questionEl.textContent = state.finalProducts.length === 1 ? 'Produto final determinado:' : 'Produtos correspondentes:';
+        gridEl.className = 'grid grid-cols-1 gap-2'; // Change to single column for final product
         state.finalProducts.forEach(product => gridEl.appendChild(createProductCard(product)));
     } else if (state.currentQuestion) {
         const { attribute, title, options } = state.currentQuestion;
