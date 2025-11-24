@@ -13,6 +13,7 @@
       --primary-bg: #1a202c; /* Charcoal-blue */
       --secondary-bg: #2d3748; /* Lighter charcoal-blue */
       --accent-color: #4299e1; /* Vibrant light blue */
+      --whatsapp-green: #25D366;
       --text-color: #ffffff; /* White */
       --border-color: #4a5568; /* Gray */
     }
@@ -80,15 +81,24 @@
         color: var(--text-color);
     }
 
-    .option-card, .product-card {
+    .option-card {
       background-color: var(--secondary-bg);
       border: 1px solid var(--border-color);
       transition: all 0.2s ease-in-out;
-      overflow: hidden; /* Ensures image corners are clipped */
-      border-radius: 0.5rem; /* rounded-lg */
+      overflow: hidden;
+      border-radius: 0.5rem;
       display: flex;
       flex-direction: column;
       max-width: 100%;
+    }
+
+    .product-card {
+        background-color: var(--secondary-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        overflow: hidden;
+        display: grid;
+        grid-template-rows: 1fr auto;
     }
 
     .option-card:hover {
@@ -101,6 +111,7 @@
       aspect-ratio: 1 / 1;
       width: 100%;
       background-color: white;
+      overflow: hidden; /* Ensure the image doesn't overflow the container */
     }
 
     .option-card img, .product-card img {
@@ -124,6 +135,42 @@
     .product-card-price {
       color: var(--text-color);
       font-size: 0.7rem; /* ~11px */
+    }
+
+    .product-card-buttons {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.5rem; /* 8px */
+        padding: 0.75rem; /* 12px */
+    }
+
+    .product-card-button {
+        padding: 0.5rem 1rem; /* 8px 16px */
+        border-radius: 0.375rem; /* 6px */
+        font-size: 0.875rem; /* 14px */
+        font-weight: 600;
+        text-align: center;
+        transition: background-color 0.2s;
+    }
+
+    .btn-view-product {
+        background-color: var(--accent-color);
+        color: var(--text-color);
+    }
+
+    .btn-view-product:hover {
+        background-color: #2b6cb0; /* Darker blue */
+    }
+
+    .btn-specialist {
+        background-color: var(--whatsapp-green);
+        border: 1px solid var(--whatsapp-green);
+        color: var(--text-color);
+    }
+
+    .btn-specialist:hover {
+        background-color: #1EAF56; /* Darker green */
+        border-color: #1EAF56;
     }
 
     #chat-section {

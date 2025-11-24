@@ -136,9 +136,44 @@ function createProductCard(product) {
     if (!product) return document.createElement('div');
     const productName = product.slug.split('/').pop().replace('.php', '').replace(/-/g, ' ');
     const card = document.createElement('article');
-    card.className = 'product-card rounded-lg shadow-sm';
+    card.className = 'product-card rounded-lg shadow-sm'; // Re-adding styling classes
     const productLink = `${BASE_PRODUCT_URL}${product.slug}`;
-    card.innerHTML = `<div class="image-wrapper"><img src="${product.image}" alt="${productName}" /></div><div class="card-text-container"><h3 class="product-card-title"><a href="${productLink}" target="_blank" class="hover:underline">${productName}</a></h3><p class="product-card-price">Preço sob consulta</p></div>`;
+
+    // Card content (image, title)
+    const cardContent = document.createElement('div');
+    cardContent.innerHTML = `
+        <div class="image-wrapper"><img src="${product.image}" alt="${productName}" /></div>
+        <div class="card-text-container">
+            <h3 class="product-card-title"><a href="${productLink}" target="_blank" class="hover:underline">${productName}</a></h3>
+        </div>
+    `;
+    card.appendChild(cardContent);
+
+    // Button container
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'product-card-buttons';
+
+    // "Ver Produto" button
+    const viewButton = document.createElement('a');
+    viewButton.href = productLink;
+    viewButton.target = '_blank';
+    viewButton.className = 'product-card-button btn-view-product';
+    viewButton.textContent = 'Ver Produto';
+    buttonContainer.appendChild(viewButton);
+
+    // "Falar com Especialista" button
+    const specialistButton = document.createElement('button');
+    specialistButton.className = 'product-card-button btn-specialist';
+    specialistButton.textContent = 'Falar com Especialista';
+    specialistButton.addEventListener('click', () => {
+        appState.updateUserData({ talkToHuman: true });
+        if (window.innerWidth <= 768) {
+            document.body.setAttribute('data-active-tab', 'chat');
+        }
+    });
+    buttonContainer.appendChild(specialistButton);
+
+    card.appendChild(buttonContainer);
     return card;
 }
 
@@ -205,7 +240,7 @@ window.ConfigEngine = {
         const nextSelections = calculateNextSelections(currentSelections, facet, value);
         appState.updateProductChoice(nextSelections);
     },
+    render: renderLatestState // Expose the render function
 };
 
 appState.subscribe(renderLatestState);
-renderLatestState();

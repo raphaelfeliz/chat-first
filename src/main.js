@@ -17,7 +17,7 @@ const events = {
         this.listeners[event].push(callback);
     },
     emit(event, payload) {
-        if (this.listeners[event]) {
+        if (this.listeners[event] && this.listeners[event].length > 0) {
             this.listeners[event].forEach(callback => callback(payload));
         } else {
              console.warn(`Attempted to emit event '${event}' but no listeners were registered.`);
@@ -113,15 +113,31 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         bindUserMessageHandler(chatId, addMessage);
 
+        events.on('facetQuestionUpdated', (questionText) => {
+            if (questionText) {
+                const aiMessage = {
+                    userType: 'ai',
+                    bubbleType: 'chat-bubble',
+                    text: questionText,
+                    link: null,
+                    timestamp: new Date()
+                };
+                addMessage(chatId, aiMessage).catch(err => {
+                    console.error("Failed to add AI facet question to chat via event.", err);
+                });
+            }
+        });
+
     } catch (e) {
         console.error('Critical error during chat session initialization.', e);
     }
 
     import('./configurator/configuratorEngine.js').then(() => {
-        if (window.ConfigEngine && window.ConfigEngine.init) {
+        if (window.ConfigEngine && window.ConfigEngine.init && window.ConfigEngine.render) {
             window.ConfigEngine.init(events);
+            window.ConfigEngine.render(); // *** FIX: Trigger initial render ***
         } else {
-            console.error('Configurator engine structure is incorrect (ConfigEngine.init not found).');
+            console.error('Configurator engine structure is incorrect (init or render not found).');
         }
     }).catch(error => {
         console.error('Failed to dynamically import configurator engine.', error);

@@ -40,3 +40,5 @@ A simple chat application with a product display. The user can send and receive 
     *   A bold font and a blue underline on the active tab, with corrected hover states.
 6.  **Card Layout Adjustment:** Modified the card styles to display two cards per row on most devices, with slightly smaller content for a more compact look.
 7.  **Logo Size Refinement:** Further reduced the logo size and margin in the mobile navigation bar to maximize space for the navigation text.
+8.  **Favicon Added:** Added a favicon link to `index.html` to resolve the `favicon.ico 404` error.
+9.  **Product Card Buttons Implemented (Fix):** Correctly re-implemented the "[ver produto]" and "[falar com especialista]" buttons in the `createProductCard` function within `src/configurator/configuratorEngine.js`. This resolves the issue where buttons were not appearing on the final product card due to an accidental reversion of code. Also fixed a race condition by explicitly triggering the initial render of the configurator after its full initialization.
